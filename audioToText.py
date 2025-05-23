@@ -4,6 +4,13 @@ import time
 from pathlib import Path
 from openai import OpenAI
 import argparse
+import logging
+
+# --- Configure Logging ---
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
 
 # --- CLI Arguments ---
 parser = argparse.ArgumentParser()
@@ -56,7 +63,7 @@ def split_audio(input_path: Path, chunk_duration_sec: int):
 start = time.time()
 with open(output_path, "w", encoding="utf-8") as out_file:
     for i, chunk_path in enumerate(split_audio(input_path, 600)):
-        print(f"🎧 Processing chunk {i + 1}: {chunk_path.name}")
+        logging.info(f"🎧 Processing chunk {i + 1}: {chunk_path.name}")
         with open(chunk_path, "rb") as audio_file:
             try:
                 transcription = client.audio.transcriptions.create(
@@ -66,10 +73,9 @@ with open(output_path, "w", encoding="utf-8") as out_file:
                 result = transcription.text.strip() if transcription and transcription.text else "[EMPTY TRANSCRIPTION]"
                 out_file.write(result + "\n")
             except Exception as e:
-                print(f"❌ Error on chunk {i}: {e}")
+                logging.error(f"❌ Error on chunk {i}: {e}")
                 out_file.write(f"[ERROR]: {e}\n")
         os.remove(chunk_path)
 
-
-print(f"\n✅ Done: {output_path}")
-print(f"⏱ Execution time: {time.time() - start:.2f} sec")
+logging.info(f"\n✅ Done: {output_path}")
+logging.info(f"⏱ Execution time: {time.time() - start:.2f} sec")
