@@ -1,10 +1,12 @@
 import os
+import sys
 import subprocess
 import time
-from pathlib import Path
-from openai import OpenAI
 import argparse
 import logging
+from pathlib import Path
+from openai import OpenAI
+
 
 # --- Configure Logging ---
 logging.basicConfig(
@@ -20,13 +22,24 @@ args = parser.parse_args()
 
 input_path = Path(args.input)
 output_path = Path(args.output) if args.output else input_path.with_suffix(".txt")
+
+# --- Validate Input File ---
+valid_extensions = {".mp3", ".m4a"}
+if not input_path.exists() or not input_path.is_file():
+    logging.error(f"❌ Input file does not exist: {input_path}")
+    sys.exit(1)
+if input_path.suffix.lower() not in valid_extensions:
+    logging.error(f"❌ Invalid file format: {input_path.suffix}. Supported formats: {', '.join(valid_extensions)}")
+    sys.exit(1)
+
 chunk_dir = Path("chunks")
 chunk_dir.mkdir(exist_ok=True)
 
 # --- Init Client ---
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key:
-    raise EnvironmentError("Please set OPENAI_API_KEY in the environment.")
+    logging.error("❌ Please set OPENAI_API_KEY in the environment.")
+    sys.exit(1)
 client = OpenAI(api_key=api_key)
 
 # --- Detect audio length using ffprobe ---
